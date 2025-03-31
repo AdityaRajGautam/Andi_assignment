@@ -1,41 +1,53 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 const Stock = () => {
   const [stock, setStock] = useState([]);
   const [vendor, setVendor] = useState("");
   const [type, setType] = useState("purchase");
-  const [quantity,setQuantity] = useState();
-  const [amount, setAmount] = useState();
+  const [quantity, setQuantity] = useState("");
+  const [amount, setAmount] = useState("");
+
+  // Fetch stocks from backend when component mounts
+  useEffect(() => {
+    const fetchStocks = async () => {
+      try {
+        const response = await fetch("http://localhost:8080/api/v1/stock/getstock");
+        if (!response.ok) throw new Error("Failed to fetch stock data");
+
+        const data = await response.json();
+        setStock(data);
+      } catch (error) {
+        console.error("Error fetching stock:", error);
+      }
+    };
+
+    fetchStocks();
+  }, []);
 
   const handleAddStock = async () => {
     const newStock = { vendor, type, amount: Number(amount), quantity: Number(quantity) };
 
     try {
-        const response = await fetch("http://localhost:8080/api/v1/stock/poststocks", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(newStock),
-        });
+      const response = await fetch("http://localhost:8080/api/v1/stock/poststocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newStock),
+      });
 
-        if (!response.ok) {
-            throw new Error("Failed to add stock");
-        }
+      if (!response.ok) throw new Error("Failed to add stock");
 
-        const data = await response.json();
-        console.log(data);
-        setStock([...stock, data]);
+      const data = await response.json();
+      setStock([...stock, data]); // Update the frontend list with the new stock
     } catch (error) {
-        console.error("Error adding stock:", error);
+      console.error("Error adding stock:", error);
     }
 
     setVendor("");
     setType("purchase");
     setAmount("");
     setQuantity("");
-};
-
+  };
 
   return (
     <div className="p-4">
@@ -76,22 +88,18 @@ const Stock = () => {
       </div>
       <ul className="mt-4">
         {stock.map((entry, index) => (
-          <li key={index} className="p-2 border-b">
+          <li key={index} className="p-2 border-b flex justify-between">
             <div className="flex items-center gap-4 p-2">
-              <div className=" flex  items-center gap-4 p-2 flex-2/3">
-                <div>{entry.vendor}</div>
-                <div>{entry.type}</div>
-                <div>Rs.{entry.amount}</div>
-                <div>{entry.quantity}</div>
-              </div>
-              <div className="flex-1/3">
-                <button className="bg-blue-500 text-white p-2 rounded">
-                <Link to={`/invoice?vendor=${entry.vendor}&type=${entry.type}&amount=${entry.amount}&quantity=${entry.quantity}`}>
+              <span>{entry.vendor}</span>
+              <span>{entry.type}</span>
+              <span>Rs.{entry.amount}</span>
+              <span>{entry.quantity}</span>
+            </div>
+            <button className="bg-blue-500 text-white p-2 rounded">
+            <Link to={`/invoice?vendor=${entry.vendor}&type=${entry.type}&amount=${entry.amount}&quantity=${entry.quantity}`}>
   Invoice
 </Link>
-                </button>
-              </div>
-            </div>
+            </button>
           </li>
         ))}
       </ul>
